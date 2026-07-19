@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+*.log
+
+server/config/config.json
+
+public/sponsors/*
+!public/sponsors/.gitkeep
+
+.DS_Store
+.vscode/

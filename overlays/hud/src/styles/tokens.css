@@ -1,0 +1,51 @@
+/* overlays/hud/src/styles/tokens.css */
+:root {
+  --bg-panel: #0d1015;
+  --bg-panel-alpha: rgba(10, 12, 16, 0.82);
+  --ct-color: #2f6fed;      /* referanstaki mavi */
+  --t-color: #e8720c;       /* referanstaki turuncu */
+  --brand-accent: #ff2d78;  /* çerçeve/vurgu magenta */
+  --text-primary: #f2f0eb;
+  --text-muted: #9aa3b2;
+
+  --font-display: 'Chakra Petch', sans-serif;
+  --font-label: 'Rajdhani', sans-serif;
+  --font-data: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: transparent; /* OBS transparent source */
+  overflow: hidden;
+  font-family: var(--font-label);
+}
+
+.chamfer {
+  clip-path: polygon(
+    12px 0, 100% 0, 100% calc(100% - 12px),
+    calc(100% - 12px) 100%, 0 100%, 0 12px
+  );
+}
+
+.scan-line {
+  height: 2px;
+  width: 100%;
+  background: var(--brand-accent);
+  opacity: 0.3;
+}
+.scan-line.live {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.sponsor-fade {
+  animation: sponsorFadeIn 0.4s ease;
+}
+@keyframes sponsorFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}

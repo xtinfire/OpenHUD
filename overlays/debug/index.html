@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>GSI Debug Overlay</title>
+<style>
+  body {
+    background: rgba(0,0,0,0.6); /* OBS'te transparent source için 0'a çekebilirsin */
+    color: #0f0;
+    font-family: monospace;
+    font-size: 13px;
+    padding: 12px;
+    margin: 0;
+  }
+  #status {
+    color: #fff;
+    margin-bottom: 8px;
+    font-weight: bold;
+  }
+  .connected { color: #0f0; }
+  .disconnected { color: #f33; }
+  pre {
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 90vh;
+    overflow: auto;
+  }
+</style>
+</head>
+<body>
+  <div id="status" class="disconnected">Bağlanılıyor...</div>
+  <pre id="output">Henüz veri yok.</pre>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const outputEl = document.getElementById('output');
+
+    function connect() {
+      const ws = new WebSocket('ws://127.0.0.1:3000/live');
+
+      ws.onopen = () => {
+        statusEl.textContent = 'Bağlandı';
+        statusEl.className = 'connected';
+      };
+
+      ws.onclose = () => {
+        statusEl.textContent = 'Bağlantı koptu, yeniden deneniyor...';
+        statusEl.className = 'disconnected';
+        setTimeout(connect, 2000); // otomatik yeniden bağlanma
+      };
+
+      ws.onerror = () => {
+        statusEl.textContent = 'Hata';
+        statusEl.className = 'disconnected';
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'state_update') {
+          const p = msg.payload;
+          outputEl.textContent = JSON.stringify({
+            map: p.map,
+            round: p.round,
+            ctAlive: p.ctAlive,
+            tAlive: p.tAlive,
+            suggestion: msg.suggestion,
+            players: p.players.map(pl => ({
+              name: pl.name, team: pl.team, hp: pl.hp
+            })),
+          }, null, 2);
+        }
+      };
+    }
+
+    connect();
+  </script>
+</body>
+</html>

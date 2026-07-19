@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OpenHUD Control Panel</title>
+<style>
+  :root {
+    --bg: #0d1015;
+    --panel: #161a20;
+    --ct: #5da9e0;
+    --t: #e0a85d;
+    --accent: #ff2d78;
+    --text: #f2f0eb;
+    --muted: #8b93a1;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh;
+  }
+  nav {
+    width: 180px; background: var(--panel); display: flex; flex-direction: column;
+    border-right: 1px solid #262b33;
+  }
+  nav button {
+    background: none; border: none; color: var(--muted); padding: 16px;
+    text-align: left; cursor: pointer; font-size: 14px; border-left: 3px solid transparent;
+  }
+  nav button.active { color: var(--text); border-left-color: var(--accent); background: #1c212a; }
+  main { flex: 1; padding: 24px; overflow-y: auto; }
+  section { display: none; }
+  section.active { display: block; }
+  h2 { margin-top: 0; }
+  label { display: block; margin: 12px 0 4px; font-size: 13px; color: var(--muted); }
+  input, select { width: 100%; padding: 8px; background: #1c212a; border: 1px solid #2a2f38; color: var(--text); border-radius: 4px; }
+  button.action {
+    margin-top: 16px; padding: 10px 18px; background: var(--accent); border: none;
+    color: #0a0c10; font-weight: 700; border-radius: 4px; cursor: pointer;
+  }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+  .map-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .map-chip {
+    padding: 6px 12px; background: #1c212a; border: 1px solid #2a2f38;
+    border-radius: 4px; cursor: pointer; font-size: 13px;
+  }
+  .map-chip.selected { border-color: var(--accent); color: var(--accent); }
+  .veto-log { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .veto-log-item {
+    padding: 8px 12px; background: #1c212a; border-radius: 4px; display: flex; justify-content: space-between;
+  }
+  .sponsor-item {
+    display: flex; align-items: center; gap: 12px; padding: 8px; background: #1c212a;
+    border-radius: 4px; margin-top: 8px;
+  }
+  .sponsor-item img { height: 32px; }
+  .sponsor-item .name { flex: 1; }
+  .sponsor-item button { background: #2a2f38; color: var(--text); border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+
+  .lang-switch {
+    margin-top: auto; padding: 16px; display: flex; gap: 6px; border-top: 1px solid #262b33;
+  }
+  .lang-switch button {
+    flex: 1; padding: 6px; background: #1c212a; border: 1px solid #2a2f38; border-radius: 4px;
+    color: var(--muted); cursor: pointer; font-size: 12px;
+  }
+  .lang-switch button.active { color: var(--text); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<nav>
+  <button data-tab="layout" class="active" data-i18n="nav.layout">Layout & Branding</button>
+  <button data-tab="veto" data-i18n="nav.veto">Veto</button>
+  <button data-tab="sponsors" data-i18n="nav.sponsors">Sponsors</button>
+  <button data-tab="observer" data-i18n="nav.observer">Smart Observer</button>
+
+  <div class="lang-switch">
+    <button id="lang-en" class="active" onclick="setLanguage('en')">EN</button>
+    <button id="lang-tr" onclick="setLanguage('tr')">TR</button>
+  </div>
+</nav>
+
+<main>
+
+  <section id="layout" class="active">
+    <h2 data-i18n="layout.title">Layout & Branding</h2>
+    <label data-i18n="layout.mode">Layout Mode</label>
+    <select id="layoutMode">
+      <option value="horizontal" data-i18n="layout.horizontal">Horizontal</option>
+      <option value="vertical" data-i18n="layout.vertical">Vertical</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label data-i18n="layout.ctColor">CT Color</label>
+        <input type="color" id="ctColor" value="#5da9e0">
+      </div>
+      <div>
+        <label data-i18n="layout.tColor">T Color</label>
+        <input type="color" id="tColor" value="#e0a85d">
+      </div>
+      <div>
+        <label data-i18n="layout.brandColor">Branding Color</label>
+        <input type="color" id="brandColor" value="#ff2d78">
+      </div>
+    </div>
+
+    <button class="action" onclick="applyLayoutConfig()" data-i18n="layout.apply">Apply</button>
+  </section>
+
+  <section id="veto">
+    <h2 data-i18n="veto.title">Veto Management</h2>
+    <div class="row">
+      <div>
+        <label data-i18n="veto.teamA">Team A</label>
+        <input type="text" id="teamA" value="Team A">
+      </div>
+      <div>
+        <label data-i18n="veto.teamB">Team B</label>
+        <input type="text" id="teamB" value="Team B">
+      </div>
+      <div>
+        <label data-i18n="veto.format">Format</label>
+        <select id="vetoFormat">
+          <option value="bo1">BO1</option>
+          <option value="bo3" selected>BO3</option>
+          <option value="bo5">BO5</option>
+        </select>
+      </div>
+    </div>
+
+    <label data-i18n="veto.mapPool">Map Pool</label>
+    <div class="map-pool" id="mapPool"></div>
+
+    <button class="action" onclick="startVeto()" data-i18n="veto.start">Start Veto</button>
+
+    <div id="vetoLive" style="margin-top: 24px;"></div>
+  </section>
+
+  <section id="sponsors">
+    <h2 data-i18n="sponsors.title">Sponsor Management</h2>
+    <label data-i18n="sponsors.upload">Upload Logo</label>
+    <input type="file" id="sponsorFile" accept="image/*">
+    <label data-i18n="sponsors.name">Display Name</label>
+    <input type="text" id="sponsorName" data-i18n-placeholder="sponsors.namePlaceholder" placeholder="Sponsor name">
+    <button class="action" onclick="uploadSponsor()" data-i18n="sponsors.uploadBtn">Upload</button>
+
+    <label style="margin-top: 20px;" data-i18n="sponsors.rotation">Rotation Interval (ms)</label>
+    <input type="number" id="rotationInterval" value="8000">
+    <button class="action" onclick="applySponsorConfig()" data-i18n="sponsors.applyRotation">Apply Interval</button>
+
+    <div id="sponsorList" style="margin-top: 16px;"></div>
+  </section>
+
+  <section id="observer">
+    <h2 data-i18n="observer.title">Smart Observer</h2>
+    <label data-i18n="observer.mode">Mode</label>
+    <select id="observerMode">
+      <option value="suggest" data-i18n="observer.suggest">Suggest (show recommendation)</option>
+      <option value="auto" data-i18n="observer.auto">Auto-Switch (automatically change camera)</option>
+    </select>
+    <button class="action" onclick="applyObserverMode()" data-i18n="observer.apply">Apply</button>
+    <p style="color: var(--muted); font-size: 13px; margin-top: 16px;" data-i18n="observer.note">
+      Auto-Switch mode sends commands directly to CS2's console opened via -netconport.
+      Make sure CS2 is launched with the <code>-netconport 2121</code> parameter.
+    </p>
+  </section>
+
+</main>
+
+<script>
+  const API = 'http://127.0.0.1:3000';
+
+  // --- i18n ---
+  const translations = {
+    en: {
+      'nav.layout': 'Layout & Branding',
+      'nav.veto': 'Veto',
+      'nav.sponsors': 'Sponsors',
+      'nav.observer': 'Smart Observer',
+      'layout.title': 'Layout & Branding',
+      'layout.mode': 'Layout Mode',
+      'layout.horizontal': 'Horizontal',
+      'layout.vertical': 'Vertical',
+      'layout.ctColor': 'CT Color',
+      'layout.tColor': 'T Color',
+      'layout.brandColor': 'Branding Color',
+      'layout.apply': 'Apply',
+      'veto.title': 'Veto Management',
+      'veto.teamA': 'Team A',
+      'veto.teamB': 'Team B',
+      'veto.format': 'Format',
+      'veto.mapPool': 'Map Pool',
+      'veto.start': 'Start Veto',
+      'sponsors.title': 'Sponsor Management',
+      'sponsors.upload': 'Upload Logo',
+      'sponsors.name': 'Display Name',
+      'sponsors.namePlaceholder': 'Sponsor name',
+      'sponsors.uploadBtn': 'Upload',
+      'sponsors.rotation': 'Rotation Interval (ms)',
+      'sponsors.applyRotation': 'Apply Interval',
+      'observer.title': 'Smart Observer',
+      'observer.mode': 'Mode',
+      'observer.suggest': 'Suggest (show recommendation)',
+      'observer.auto': 'Auto-Switch (automatically change camera)',
+      'observer.apply': 'Apply',
+      'observer.note': 'Auto-Switch mode sends commands directly to CS2\'s console opened via -netconport. Make sure CS2 is launched with the <code>-netconport 2121</code> parameter.',
+    },
+    tr: {
+      'nav.layout': 'Görünüm & Marka',
+      'nav.veto': 'Veto',
+      'nav.sponsors': 'Sponsorlar',
+      'nav.observer': 'Akıllı Gözlemci',
+      'layout.title': 'Görünüm & Marka',
+      'layout.mode': 'Layout Modu',
+      'layout.horizontal': 'Yatay',
+      'layout.vertical': 'Dikey',
+      'layout.ctColor': 'CT Rengi',
+      'layout.tColor': 'T Rengi',
+      'layout.brandColor': 'Marka Rengi',
+      'layout.apply': 'Uygula',
+      'veto.title': 'Veto Yönetimi',
+      'veto.teamA': 'Takım A',
+      'veto.teamB': 'Takım B',
+      'veto.format': 'Format',
+      'veto.mapPool': 'Harita Havuzu',
+      'veto.start': "Veto'yu Başlat",
+      'sponsors.title': 'Sponsor Yönetimi',
+      'sponsors.upload': 'Logo Yükle',
+      'sponsors.name': 'Görünen İsim',
+      'sponsors.namePlaceholder': 'Sponsor adı',
+      'sponsors.uploadBtn': 'Yükle',
+      'sponsors.rotation': 'Rotasyon Süresi (ms)',
+      'sponsors.applyRotation': 'Süreyi Uygula',
+      'observer.title': 'Akıllı Gözlemci',
+      'observer.mode': 'Mod',
+      'observer.suggest': 'Öneri (tavsiye göster)',
+      'observer.auto': 'Otomatik Geçiş (kamerayı otomatik değiştir)',
+      'observer.apply': 'Uygula',
+      'observer.note': "Otomatik Geçiş modu, -netconport ile açılmış CS2 konsoluna doğrudan komut gönderir. CS2'nin <code>-netconport 2121</code> parametresiyle başlatıldığından emin olun.",
+    },
+  };
+
+  let currentLang = 'en';
+
+  function applyTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      const key = el.getAttribute('data-i18n');
+      if (translations[currentLang][key]) el.innerHTML = translations[currentLang][key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (translations[currentLang][key]) el.placeholder = translations[currentLang][key];
+    });
+  }
+
+  function setLanguage(lang) {
+    currentLang = lang;
+    document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+    document.getElementById('lang-tr').classList.toggle('active', lang === 'tr');
+    document.documentElement.lang = lang;
+    applyTranslations();
+    localStorage.setItem('openhud-lang', lang);
+  }
+
+  // Sayfa açılışında daha önce seçilmiş dili hatırla, yoksa EN kalsın
+  const savedLang = localStorage.getItem('openhud-lang');
+  if (savedLang) setLanguage(savedLang);
+
+  // --- Tab switching ---
+  document.querySelectorAll('nav button[data-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('nav button[data-tab]').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('section').forEach((s) => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // --- Layout & Branding ---
+  async function applyLayoutConfig() {
+    const layoutMode = document.getElementById('layoutMode').value;
+    const ct = document.getElementById('ctColor').value;
+    const t = document.getElementById('tColor').value;
+    const brand = document.getElementById('brandColor').value;
+
+    await fetch(`${API}/api/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ layoutMode, palette: { ct, t, brand } }),
+    });
+  }
+
+  // --- Veto ---
+  const MAP_POOL_DEFAULT = ['de_mirage', 'de_inferno', 'de_ancient', 'de_anubis', 'de_nuke', 'de_overpass', 'de_dust2', 'de_train', 'de_cache'];
+  const selectedMaps = new Set(MAP_POOL_DEFAULT);
+
+  function renderMapPool() {
+    const container = document.getElementById('mapPool');
+    container.innerHTML = '';
+    MAP_POOL_DEFAULT.forEach((map) => {
+      const chip = document.createElement('div');
+      chip.className = 'map-chip' + (selectedMaps.has(map) ? ' selected' : '');
+      chip.textContent = map.replace('de_', '').toUpperCase();
+      chip.onclick = () => {
+        if (selectedMaps.has(map)) selectedMaps.delete(map); else selectedMaps.add(map);
+        renderMapPool();
+      };
+      container.appendChild(chip);
+    });
+  }
+  renderMapPool();
+
+  async function startVeto() {
+    const teamAName = document.getElementById('teamA').value;
+    const teamBName = document.getElementById('teamB').value;
+    const format = document.getElementById('vetoFormat').value;
+    const mapPool = Array.from(selectedMaps);
+
+    await fetch(`${API}/api/veto/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ format, teamAName, teamBName, mapPool }),
+    });
+  }
+
+  function renderVetoLive(veto) {
+    const container = document.getElementById('vetoLive');
+    if (!veto) { container.innerHTML = ''; return; }
+
+    let html = `<div class="veto-log">`;
+    veto.results.forEach((r) => {
+      const teamName = r.team === 'A' ? veto.teamAName : veto.teamBName;
+      html += `<div class="veto-log-item"><span>${r.action.toUpperCase()} — ${r.map}</span><span>${teamName}${r.side ? ' → ' + r.side : ''}</span></div>`;
+    });
+    html += `</div>`;
+
+    if (!veto.done) {
+      if (veto.pendingSideSelection) {
+        const sideTeamName = veto.pendingSideSelection.sideChoiceTeam === 'A' ? veto.teamAName : veto.teamBName;
+        html += `<div style="margin-top:12px;">
+          <b>${sideTeamName}</b> ${currentLang === 'tr' ? 'taraf seçiyor' : 'is choosing a side'}:
+          <button class="action" onclick="chooseSide('CT')">CT</button>
+          <button class="action" onclick="chooseSide('T')">T</button>
+        </div>`;
+      } else {
+        html += `<div class="map-pool" style="margin-top:12px;">` +
+          veto.mapPool.map((m) => `<div class="map-chip" onclick="stepVeto('${m}')">${m.replace('de_', '').toUpperCase()}</div>`).join('') +
+          `</div>`;
+      }
+    }
+
+    container.innerHTML = html;
+  }
+
+  async function stepVeto(mapName) {
+    await fetch(`${API}/api/veto/step`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mapName }),
+    });
+  }
+
+  async function chooseSide(side) {
+    await fetch(`${API}/api/veto/side`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ side }),
+    });
+  }
+
+  // --- Sponsors ---
+  async function uploadSponsor() {
+    const fileInput = document.getElementById('sponsorFile');
+    const name = document.getElementById('sponsorName').value;
+    if (!fileInput.files[0]) return alert(currentLang === 'tr' ? 'Önce bir logo seç.' : 'Please select a logo first.');
+
+    const formData = new FormData();
+    formData.append('logo', fileInput.files[0]);
+    formData.append('displayName', name);
+
+    await fetch(`${API}/api/sponsors/upload`, { method: 'POST', body: formData });
+    fileInput.value = '';
+    document.getElementById('sponsorName').value = '';
+  }
+
+  async function applySponsorConfig() {
+    const rotationIntervalMs = document.getElementById('rotationInterval').value;
+    await fetch(`${API}/api/sponsors/config`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rotationIntervalMs }),
+    });
+  }
+
+  function renderSponsorList(config) {
+    const container = document.getElementById('sponsorList');
+    const hideLabel = currentLang === 'tr' ? 'Gizle' : 'Hide';
+    const showLabel = currentLang === 'tr' ? 'Göster' : 'Show';
+    const deleteLabel = currentLang === 'tr' ? 'Sil' : 'Delete';
+
+    container.innerHTML = config.sponsors.map((s) => `
+      <div class="sponsor-item">
+        <img src="${API}/sponsors/${s.filename}">
+        <span class="name">${s.displayName}</span>
+        <button onclick="toggleSponsor('${s.id}')">${s.enabled ? hideLabel : showLabel}</button>
+        <button onclick="deleteSponsor('${s.id}')">${deleteLabel}</button>
+      </div>
+    `).join('');
+  }
+
+  async function toggleSponsor(id) {
+    await fetch(`${API}/api/sponsors/${id}/toggle`, { method: 'POST' });
+  }
+  async function deleteSponsor(id) {
+    await fetch(`${API}/api/sponsors/${id}`, { method: 'DELETE' });
+  }
+
+  // --- Observer ---
+  async function applyObserverMode() {
+    const mode = document.getElementById('observerMode').value;
+    await fetch(`${API}/api/observer/mode`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode }),
+    });
+  }
+
+  // --- Live updates via WS ---
+  function connectWS() {
+    const ws = new WebSocket('ws://127.0.0.1:3000/live');
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'veto_update') renderVetoLive(msg.payload);
+      if (msg.type === 'sponsor_update') renderSponsorList(msg.payload);
+    };
+    ws.onclose = () => setTimeout(connectWS, 2000);
+  }
+  connectWS();
+
+  // Fetch current state on load
+  fetch(`${API}/api/sponsors`).then((r) => r.json()).then(renderSponsorList).catch(() => {});
+  fetch(`${API}/api/veto/state`).then((r) => r.json()).then(renderVetoLive).catch(() => {});
+</script>
+
+</body>
+</html>
