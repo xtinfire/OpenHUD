@@ -1,7 +1,4 @@
 // server/observer/heuristics.js
-// Each detector returns null or a { priority, playerSteamId, reason } suggestion.
-// Higher priority wins in director.js.
-
 function detectClutch(tick) {
   const survivors = tick.ctAlive === 1 ? tick.alive.filter(p => p.team === 'CT')
                   : tick.tAlive === 1 ? tick.alive.filter(p => p.team === 'T')
@@ -33,17 +30,32 @@ function detectLowHp(tick) {
   return null;
 }
 
+function distance3D(a, b) {
+  if (!a || !b) return Infinity;
+  return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2);
+}
+
 function detectBombPlantedRetake(tick) {
-  if (tick.round?.bomb === 'planted') {
-    // Prioritize whichever CT is closest to bombsite (needs site zone lookup
-    // per map — placeholder for now, return the CT with most kills this round
-    // or highest equip value as a proxy until zones are implemented).
-    const ct = tick.alive.filter(p => p.team === 'CT')[0];
-    if (ct) {
-      return { priority: 70, playerSteamId: ct.steamId, reason: 'Retake developing' };
-    }
-  }
-  return null;
+  if (tick.round?.bomb !== 'planted') return null;
+
+  const bombPos = tick.bombTimer?.position
+    ? tick.bombTimer.position.split(',').map(Number)
+    : null;
+
+  const ctAlive = tick.alive.filter(p => p.team === 'CT');
+  if (ctAlive.length === 0) return null;
+
+  // Bomba konumu varsa, bombaya en yakın CT'yi öner (gerçek retake adayı).
+  // Konum yoksa (bazı GSI sürümlerinde eksik olabilir) ilk CT'ye düş.
+  const target = bombPos
+    ? ctAlive
+        .filter(p => p.position)
+        .sort((a, b) => distance3D(a.position, bombPos) - distance3D(b.position, bombPos))[0]
+    : ctAlive[0];
+
+  if (!target) return null;
+
+  return { priority: 70, playerSteamId: target.steamId, reason: 'Retake developing' };
 }
 
 function detectMultiFragPotential(history) {
@@ -51,7 +63,6 @@ function detectMultiFragPotential(history) {
   const prevTick = history[history.length - 2];
   if (!prevTick) return null;
 
-  // crude kill detection via death count deltas
   for (const p of tick.players) {
     const prev = prevTick.players.find(pp => pp.steamId === p.steamId);
     if (prev && p.kills > prev.kills && p.kills >= 2) {

@@ -7,8 +7,8 @@ function attachDirector(director) { directorRef = director; }
 
 router.post('/mode', (req, res) => {
   const { mode } = req.body;
-  if (!['suggest', 'auto'].includes(mode)) {
-    return res.status(400).json({ error: 'mode "suggest" ya da "auto" olmalı' });
+  if (!['off', 'suggest', 'auto'].includes(mode)) {
+    return res.status(400).json({ error: 'mode "off", "suggest" ya da "auto" olmalı' });
   }
   if (directorRef) directorRef.mode = mode;
   res.json({ mode });

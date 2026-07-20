@@ -50,7 +50,11 @@ function normalizeState(raw, prevTick) {
       phase: round.phase,
       bomb: round.bomb ?? null,
     },
-    bombTimer: raw.bomb ?? null,
+    bombTimer: raw.bomb ? {
+      state: raw.bomb.state,       // 'planted' | 'defused' | 'exploded' | 'carried' | 'dropped'
+      countdown: raw.bomb.countdown ? Number(raw.bomb.countdown) : null,
+      position: raw.bomb.position ?? null, // "x, y, z" string, heuristics.js kendi parse ediyor
+    } : null,
     // freezetime/round bitiş sayacı — countdown gösterimi için
     clock: phaseCountdowns.phase_ends_in ? Number(phaseCountdowns.phase_ends_in) : null,
     players,

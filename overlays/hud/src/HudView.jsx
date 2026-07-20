@@ -2,6 +2,8 @@ import { BroadcastFrame } from './components/BroadcastFrame';
 import { ScoreBar } from './components/ScoreBar';
 import { PlayerList } from './components/PlayerList';
 import { ActivePlayerPanel } from './components/ActivePlayerPanel';
+import { DirectorBanner } from './components/DirectorBanner';
+
 
 export function HudView({ state, suggestion, config }) {
   if (!state) return null;
@@ -28,7 +30,8 @@ export function HudView({ state, suggestion, config }) {
           <PlayerList players={tPlayers} color={config.palette.t} suggestion={suggestion} align="right" direction="row" />
         </div>
       )}
-      <ActivePlayerPanel activePlayer={state.activePlayer} />
+      <ActivePlayerPanel activePlayer={state.activePlayer} /> 
+      <DirectorBanner suggestion={suggestion} />
     </>
   );
 }

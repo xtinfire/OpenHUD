@@ -11,6 +11,7 @@ const vetoEngine = require('./veto/vetoEngine');
 const sponsorManager = require('./sponsors/sponsorManager');
 const observerRoutes = require('./observer/observerRoutes');
 const sceneManager = require('./scene/sceneManager');
+const netconsole = require('./bridge/netconsole');
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
@@ -33,7 +34,7 @@ app.post('/gsi', (req, res) => {
   store.push(normalized);
 
   const suggestion = director.analyze(store.history());
-  sceneManager.onGameTick(normalized); // <- YENİ
+  sceneManager.onGameTick(normalized);
 
   hub.broadcast({ type: 'state_update', payload: normalized, suggestion });
   res.status(200).end();
@@ -53,6 +54,7 @@ app.use('/api/config', configManager.router);
 app.use('/api/observer', observerRoutes.router);
 app.use('/api/scene', sceneManager.router); // <- YENİ
 
+netconsole.connect(); // Connects to the default 127.0.0.1:2121 if CS2 was launched with -netconport.
 const PORT = 3000;
 server.listen(PORT, () => {
   console.log(`GSI ingest + WS hub listening on http://127.0.0.1:${PORT}`);
