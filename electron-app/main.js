@@ -8,8 +8,16 @@ let mainWindow = null;
 
 function startServer() {
   const serverEntry = path.join(__dirname, '..', 'server', 'index.js');
+
+  const extraPath = path.join(require('os').homedir(), '.cargo', 'bin');
+  const env = {
+    ...process.env,
+    PATH: `${process.env.PATH}:${extraPath}`,
+  };
+
   serverProcess = fork(serverEntry, [], {
-    silent: false, // server'ın console.log çıktısını Electron'un kendi terminaline yansıt
+    silent: false,
+    env,
   });
 
   serverProcess.on('exit', (code) => {

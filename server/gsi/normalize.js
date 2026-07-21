@@ -7,6 +7,12 @@ function normalizeState(raw, prevTick) {
   const phaseCountdowns = raw.phase_countdowns ?? {};
 
   const players = Object.entries(allplayers).map(([steamId, p]) => ({
+    const players = Object.entries(allplayers).map(([steamId, p]) => ({
+    steamId,
+    name: p.name,
+    team: p.team,
+    observerSlot: p.observer_slot ?? null, // <- YENİ
+    hp: p.state?.health ?? 0,
     steamId,
     name: p.name,
     team: p.team,
