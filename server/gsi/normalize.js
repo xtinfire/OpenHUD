@@ -1,4 +1,25 @@
 // server/gsi/normalize.js
+
+function computeEconomy(players) {
+  const ctPlayers = players.filter((p) => p.team === 'CT');
+  const tPlayers = players.filter((p) => p.team === 'T');
+
+  const avg = (arr) => (arr.length ? arr.reduce((sum, p) => sum + p.equipValue, 0) / arr.length : 0);
+
+  const ctAvgEquip = avg(ctPlayers);
+  const tAvgEquip = avg(tPlayers);
+
+  // Kaba eşik değerler: CS2'de tam alım ~$4000+, force-buy ~$2000-3000, eco <$2000
+  const ECO_THRESHOLD = 2000;
+
+  return {
+    ctAvgEquip: Math.round(ctAvgEquip),
+    tAvgEquip: Math.round(tAvgEquip),
+    ctEco: ctAvgEquip < ECO_THRESHOLD,
+    tEco: tAvgEquip < ECO_THRESHOLD,
+  };
+}
+
 function normalizeState(raw, prevTick) {
   const map = raw.map ?? {};
   const round = raw.round ?? {};
@@ -10,11 +31,7 @@ function normalizeState(raw, prevTick) {
     steamId,
     name: p.name,
     team: p.team,
-    observerSlot: p.observer_slot ?? null, // <- YENİ
-    hp: p.state?.health ?? 0,
-    steamId,
-    name: p.name,
-    team: p.team,
+    observerSlot: p.observer_slot ?? null,
     hp: p.state?.health ?? 0,
     armor: p.state?.armor ?? 0,
     flashed: p.state?.flashed ?? 0,
@@ -67,6 +84,7 @@ function normalizeState(raw, prevTick) {
     alive: players.filter(p => p.hp > 0),
     ctAlive: players.filter(p => p.team === 'CT' && p.hp > 0).length,
     tAlive: players.filter(p => p.team === 'T' && p.hp > 0).length,
+    economy: computeEconomy(players),
   };
 }
 

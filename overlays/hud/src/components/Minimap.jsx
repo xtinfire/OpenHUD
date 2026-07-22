@@ -1,16 +1,19 @@
 // overlays/hud/src/components/Minimap.jsx
 import { worldToRadarPercent, RADAR_MAPS } from '../utils/radarMaps';
 
-export function Minimap({ state, config, calibrate = false }) {
+export function Minimap({ state, config, calibrate = false, embedded = false }) {
   if (!state?.map?.name) return null;
 
-  const mapKey = state.map.name; // "de_mirage" gibi
+  const mapKey = state.map.name;
   const hasCalib = !!RADAR_MAPS[mapKey];
+
+  const containerStyle = embedded
+    ? { position: 'relative', width: '100%', height: '100%' } // HUD içine gömülü mod
+    : { position: 'fixed', top: 76, left: 12, width: 300, height: 300 }; // bağımsız sayfa modu (eski davranış)
 
   return (
     <div style={{
-      position: 'fixed', top: 76, left: 12,
-      width: 300, height: 300,
+      ...containerStyle,
       background: 'var(--bg-panel-alpha)',
       overflow: 'hidden',
     }} className="chamfer">
@@ -49,6 +52,7 @@ export function Minimap({ state, config, calibrate = false }) {
               isDead={isDead}
               forward={p.forward}
               name={p.name}
+              observerSlot={p.observerSlot}
             />
           );
         })}
@@ -58,10 +62,10 @@ export function Minimap({ state, config, calibrate = false }) {
 
 // Minimap.jsx içindeki PlayerDot fonksiyonunu güncelle
 // Minimap.jsx içindeki PlayerDot fonksiyonu — GÜNCELLENMİŞ
-function PlayerDot({ xPct, yPct, color, isDead, forward, name }) {
-
-  // Y ekseni pozisyonda ters çevrildiği için burada da forward[1]'i ters çeviriyoruz
+// overlays/hud/src/components/Minimap.jsx — PlayerDot fonksiyonunu güncelle
+function PlayerDot({ xPct, yPct, color, isDead, forward, name, observerSlot }) {
   const angle = forward ? Math.atan2(-forward[1], forward[0]) * (180 / Math.PI) : 0;
+  const slotLabel = observerSlot != null ? (observerSlot === 9 ? '0' : observerSlot + 1) : '';
 
   return (
     <div
@@ -70,25 +74,33 @@ function PlayerDot({ xPct, yPct, color, isDead, forward, name }) {
         position: 'absolute',
         left: `${xPct}%`, top: `${yPct}%`,
         transform: 'translate(-50%, -50%)',
-        width: 10, height: 10,
+        width: 14, height: 14,
         transition: 'left 0.12s linear, top 0.12s linear',
       }}
     >
       {isDead ? (
-        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>✖</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>✖</div>
       ) : (
         <div style={{
-          width: 10, height: 10, borderRadius: '50%',
+          width: 14, height: 14, borderRadius: '50%',
           background: color, border: '1px solid #0a0c10',
           position: 'relative',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
+          <span style={{
+            fontFamily: 'var(--font-data)', fontSize: 8, fontWeight: 700,
+            color: '#0a0c10', lineHeight: 1,
+          }}>
+            {slotLabel}
+          </span>
           {forward && (
             <div style={{
               position: 'absolute', left: '50%', top: '50%',
-              width: 10, height: 1.5, background: color,   // <- uzunluk 14'ten 10'a küçültüldü
+              width: 10, height: 1.5, background: color,
               transformOrigin: 'left center',
               transform: `rotate(${angle}deg)`,
               transition: 'transform 0.12s linear',
+              zIndex: -1,
             }} />
           )}
         </div>
